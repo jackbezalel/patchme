@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Author: Jack Bezalel
+
 #Functions
 
 function GET_LINUX_VENDOR(){
