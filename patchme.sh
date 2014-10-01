@@ -4,89 +4,15 @@
 
 #Functions
 
-function GET_LINUX_VENDOR(){
-
-# centos and oracle must be checked first since sometimes
-# the redhat-release file could co-exist along with the centos-release
-# or with the oracle-release file
-
-if [ -f /etc/centos-release ];
-then
-	echo "centos"
-	return $TRUE
-fi
-
-if [ -f /etc/oracle-release ];
-then
-	echo "oracle"
-	return $TRUE
-fi
-
-# centos and oracle must be checked first since sometimes
-# the redhat-release file could co-exist along with the centos-release
-# or with the oracle-release file
-
-if [ -f /etc/redhat-release ];
-then
-	echo "redhat"
-	return $TRUE
-fi
-
-if [ -f /etc/SuSE-release ];
-then
-	echo "suse"
-	return $TRUE
-fi
-
-if [ -f /etc/os-release ];
-then
-	OSDEBIAN=`cat /etc/os-release | head -1 | awk -F\" '{ print $2 }' | awk '{ print $1 }' | cut -b-6`
-	OSUBUNTU=`cat /etc/os-release | head -1 | awk -F\" '{ print $2 }' | awk '{ print $1 }' | cut -b-6`
-	if [ " $OSDEBIAN" = " Debian" ];
-	then
-		echo "debian"
-		return $TRUE
-	fi
-
-	if [ " $OSUBUNTU" = " Ubuntu" ];
-	then
-		echo "ubuntu"
-		return $TRUE
-	else
-	
-		echo "error"
-		return $FALSE
-	fi
-fi
-
-
-echo "error"
-return $FALSE
-
-}
-
-function GET_OS_MAJOR_VERS(){
-
-local OS_VENDOR=$1
-
-if [ "$OS_VENDOR" = "redhat" ];
-then
-	OS_MAJOR_VERS="`cat /etc/redhat-release | head -1 | awk '{ print $7 }' | awk -F. '{ print $1 }'`"
-	echo $OS_MAJOR_VERS
-	return $TRUE
-fi
-
-echo "error"
-return $FALSE
-
-}
+. ./get_linux_vendor.sh
+. ./get_os_major_vers.sh
 
 #Main
 
-VULN=$1
-HOSTNAME=`hostname`
-OSNAME=`uname -s`
-PATCH_DATE=`date +"%Y%m%d%H%M"`
+VULN="$1"
+HOSTNAME="`hostname`"
+OSNAME="`uname -s`"
+PATCH_DATE="`date +"%Y%m%d%H%M"`"
 OSARCH="`uname -i`"
 
 if [ " $VULN" = " " ];
@@ -95,7 +21,6 @@ then
 	exit
 fi
 
-
 case "$OSNAME" in Linux)
 	LINUX_VENDOR="`GET_LINUX_VENDOR`"
 	if [ LINUX_VENDOR != " " ];
@@ -103,6 +28,14 @@ case "$OSNAME" in Linux)
 		echo "Vendor=$LINUX_VENDOR"
 		OS_MAJOR_VERS="`GET_OS_MAJOR_VERS $LINUX_VENDOR`"
 		echo "Major Version=$OS_MAJOR_VERS"
+
+		if [ -f /patches/machines/`hostname`/$VULN/patch-live-ok ];
+		then
+			echo "Machine already marked as pathed for $VULN"
+			echo "Exiting...!"
+			exit
+		fi
+
 		MACHINE_PATCH_DIR="/patches/machines/`hostname`/$VULN/$PATCH_DATE"
 		VULN_PATCH="/patches/vuln/$VULN/$LINUX_VENDOR/$OS_MAJOR_VERS/$OSARCH"
 		mkdir -p $MACHINE_PATCH_DIR
