@@ -38,7 +38,11 @@ patchme activation:
 =====================
 
 cd /patches/bin
-./patchme.sh
+./patchme.sh VULNERABILITY
+
+Example:
+
+./patchme.sh CVE-2014-7169-shellshock
 
 The patchme.sh script will automatically create the /patches/machines directory for each machine, for any patch it gets applied and for any date/hour/minute the patchme script was activated for this vulnerability
 

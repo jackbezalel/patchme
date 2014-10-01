@@ -29,7 +29,7 @@ if [ " $MACHINE_PATCHED" != " " ];
 then
 	echo "Machine already marked as patched for $VULN"
 	echo "Exiting...!"
-	#exit $TRUE
+	exit $TRUE
 fi
 
 
