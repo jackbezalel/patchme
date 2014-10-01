@@ -9,6 +9,8 @@
 
 #Main
 
+FALSE=1
+TRUE=0
 VULN="$1"
 HOSTNAME="`hostname`"
 OSNAME="`uname -s`"
@@ -18,26 +20,33 @@ OSARCH="`uname -i`"
 if [ " $VULN" = " " ];
 then
 	echo "Usage: $0 VulnerabilityID"
-	exit
+	exit $FALSE
 fi
 
-case "$OSNAME" in Linux)
+MACHINE_PATCHED="`find /patches/machines/$HOSTNAME/$VULN/*/patch-live-ok`"
+
+if [ " $MACHINE_PATCHED" != " " ];
+then
+	echo "Machine already marked as patched for $VULN"
+	echo "Exiting...!"
+	#exit $TRUE
+fi
+
+
+case $OSNAME in
+Linux)
 	LINUX_VENDOR="`GET_LINUX_VENDOR`"
-	if [ LINUX_VENDOR != " " ];
+	echo "Vendor=$LINUX_VENDOR"
+	OS_MAJOR_VERS="`GET_OS_MAJOR_VERS $LINUX_VENDOR`"
+	echo "Major Version=$OS_MAJOR_VERS"
+	MACHINE_PATCH_DIR="/patches/machines/`hostname`/$VULN/$PATCH_DATE"
+	VULN_PATCH="/patches/vuln/$VULN/$LINUX_VENDOR/$OS_MAJOR_VERS/$OSARCH"
+	mkdir -p $MACHINE_PATCH_DIR
+	echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR by patch at $VULN_PATCH"
+	echo "Gathering current (pre-patching) YUM and RPM system info"
+
+	if [ $LINUX_VENDOR = "redhat" ];
 	then
-		echo "Vendor=$LINUX_VENDOR"
-		OS_MAJOR_VERS="`GET_OS_MAJOR_VERS $LINUX_VENDOR`"
-		echo "Major Version=$OS_MAJOR_VERS"
-
-		if [ -f /patches/machines/`hostname`/$VULN/patch-live-ok ];
-		then
-			echo "Machine already marked as pathed for $VULN"
-			echo "Exiting...!"
-			exit
-		fi
-
-		MACHINE_PATCH_DIR="/patches/machines/`hostname`/$VULN/$PATCH_DATE"
-		VULN_PATCH="/patches/vuln/$VULN/$LINUX_VENDOR/$OS_MAJOR_VERS/$OSARCH"
 		mkdir -p $MACHINE_PATCH_DIR
 		echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR by patch at $VULN_PATCH"
 		echo "Gathering current (pre-patching) YUM and RPM system info"
@@ -45,7 +54,8 @@ case "$OSNAME" in Linux)
 		echo "Dry run (verification only) now..."
 		rpm -Uvh --test $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-dry.log
 		PATCH_STATUS=$?
-		if [ $PATCH_STATUS != 0 ];
+
+		if [ $PATCH_STATUS != $TRUE ];
 		then
 			touch $MACHINE_PATCH_DIR/patch-dry-bad
 			echo "Failed at Dry Run - exiting!"
@@ -57,6 +67,7 @@ case "$OSNAME" in Linux)
 		echo "Live update running now..."
 		rpm -Uvh $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-live.log
 		PATCH_STATUS=$?
+
 		if [ $PATCH_STATUS != 0 ];
 		then
 			touch $MACHINE_PATCH_DIR/patch-live-bad
@@ -69,11 +80,14 @@ case "$OSNAME" in Linux)
 			rpm -qa &> $MACHINE_PATCH_DIR/software-post.txt
 			echo "Done, all OK! Thanks for using the Patcherrrrr!"
 		fi
+	else
+		echo "We do not support patching for $LINUX_VENDOR"
+		exit $FALSE
 	fi
 ;;
 *)
-	echo "Error in OS vendor"
-	exit
+	echo "We do not support patching for $OSNAME"
+	exit $FALSE
 ;;
 esac
 
