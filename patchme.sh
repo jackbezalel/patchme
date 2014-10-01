@@ -66,7 +66,7 @@ Linux)
 		echo "Gathering current (pre-patching) YUM and RPM system info"
 		rpm -qa &> $MACHINE_PATCH_DIR/software-pre.txt
 		echo "Dry run (verification only) now..."
-		rpm -Uvh --test $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-dry.log
+		rpm -Fvh --test $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-dry.log
 		PATCH_STATUS=$?
 
 		if [ $PATCH_STATUS != $TRUE ];
@@ -79,7 +79,7 @@ Linux)
 		fi
 		
 		echo "Live update running now..."
-		rpm -Uvh $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-live.log
+		rpm -Fvh $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-live.log
 		PATCH_STATUS=$?
 
 		if [ $PATCH_STATUS != 0 ];
