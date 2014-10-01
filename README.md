@@ -3,6 +3,8 @@ patchme
 
 Unix/Linux Hot Vulnerability mass patching tool, identifies the operating system and uses a simple repository to patch, log and manage the process
 
+Author: Jack Bezalel ( http://jackbezalel.com http://jackbezalel.net http://linkedin.com/in/jackbezalel )
+
 To use patch me you need to have this directory structure in place:
 
 /patches
@@ -32,5 +34,46 @@ To use patch me you need to have this directory structure in place:
 /patches/vuln/CVE-2014-7169-shellshock/redhat/5/i386
 /patches/vuln/CVE-2014-7169-shellshock/redhat/5/ia64
 
+patchme activation:
+=====================
+
+cd /patches/bin
+./patchme.sh
+
+The patchme.sh script will automatically create the /patches/machines directory for each machine, for any patch it gets applied and for any date/hour/minute the patchme script was activated for this vulnerability
+
+/patches/machines sample directory:
 
 
+/patches/machines/
+/patches/machines/MACHINE
+/patches/machines/MACHINE/CVE-2014-7169-shellshock
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/software-pre.txt
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/patch-dry.log
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/patch-dry-ok
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/patch-live.log
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/patch-live-ok
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201409301817/software-post.txt
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201410011412
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201410011412/software-pre.txt
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201410011412/patch-dry.log
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201410011412/patch-dry-bad
+
+In this exmaple patchme created 2 instances of its activation.
+The first instance logged at:
+/patches/machines/MACHINE/CVE-2014-7169-shellshock/201410011412
+includes:
+software-pre.txt - output of the software packages installed on machine "MACHINE" before the patching
+patch-dry.log - log of the "dry run" - verification of patching, before actually committed
+patch-dry-bad - status file that gets created if the "dry run" fails - in this case the "Live Update" will not be executed
+
+The 2nd instance of patchme includes:
+software-pre.txt - explained already
+patch-dry.log - explaned already, and in this instance it was executed fine
+patch-dry-ok - status file that gets created if the "Dry Run" succeeds
+patch-live.log - log of the "live update" - actual patching that got committed
+patch-live-ok - status file which gets created when the "Live Update" succeeds
+software-post.txt - output of the software packages installed on machine "MACHINE" after the patching
+
+So you could run reports on /patches/machines to verify which machines got patched, when, what was added / removed and what wen't wrong.
