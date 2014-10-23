@@ -33,7 +33,7 @@ fi
 
 if [ -d "/patches/machines/$HOSTNAME/$VULN" ];
 then    
-	MACHINE_PATCHED="`find /patches/machines/$HOSTNAME/$VULN/*/patch-live-ok`"
+	MACHINE_PATCHED="`find /patches/machines/$HOSTNAME/$VULN/*/patch-live-ok 2>/dev/null`"
 	if [ " $MACHINE_PATCHED" != " " ];
 	then
 		echo "Machine already marked as patched for $VULN"
@@ -127,10 +127,10 @@ SunOS)
 	then
 		ZONE_NAME="`zonename`"
 		echo "ZONE $ZONE_NAME"
-		ZONE_TYPE="`pkgcond -n is_what | grep 'is_sparse_root_nonglobal_zone=1'`"
+		ZONE_TYPE="`pkgcond -n is_what | grep 'is_global_zone=0'`"
 		if	[ " $ZONE_TYPE" != " " ];
 		then	
-			echo "Execution aborted since this is a sparse zone."
+			echo "Execution aborted since this NOT a global zone."
 			echo "Please re-run on the global zone."
 			exit $TRUE
 		fi
@@ -138,6 +138,7 @@ SunOS)
 
 	OSARCH="`uname -m`"
 	MACHINE_PATCH_DIR="/patches/machines/$HOSTNAME/$VULN/$PATCH_DATE"
+	MACHINE_PATCH_WORK_DIR="/tmp/PatchMe/$VULN/$PATCH_DATE"
 	VULN_PATCH="/patches/vuln/$VULN/$OSNAME/$OS_MAJOR_VERS/$OSARCH"
 
 	if 	[ ! -d "$VULN_PATCH" ];
@@ -147,14 +148,28 @@ SunOS)
 		exit $TRUE
 	fi
 
-	echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR by patch at $VULN_PATCH"
+	echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR"
+	echo "by patch from $VULN_PATCH"
+	echo "using temporary work directory at $MACHINE_PATCH_WORK_DIR"
+
+	mkdir -p $MACHINE_PATCH_WORK_DIR
+	mkdir -p $MACHINE_PATCH_WORK_DIR/patches
+
+	cp -pr $VULN_PATCH/* $MACHINE_PATCH_WORK_DIR/patches
 
 	mkdir -p $MACHINE_PATCH_DIR
-	echo "Gathering current (pre-patching) pkginfo -l system info"
-	pkginfo -l >$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+
+	echo "Gathering current (pre-patching) system info"
+	echo "*** pkginfo -l ***\n\n\n" >$MACHINE_PATCH_DIR/software-pre.txt
+	pkginfo -l >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+	echo "*** showrev -p ***\n\n\n" >>$MACHINE_PATCH_DIR/software-pre.txt
+	showrev -p >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
 	echo "Dry run (verification only) now..."
-	pkgchk -d $VULN_PATCH/* >$MACHINE_PATCH_DIR/patch-dry.log 2>&1
+	patchadd -a -M $MACHINE_PATCH_WORK_DIR/patches/ \
+			>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
 	PATCH_STATUS=$?
+
+	cp $MACHINE_PATCH_WORK_DIR/patch-dry.log $MACHINE_PATCH_DIR
 
 	if [ $PATCH_STATUS != $TRUE ];
 	then
@@ -166,8 +181,11 @@ SunOS)
 	fi
 
 	echo "Live update running now..."
-	pkgadd -d $VULN_PATCH >$MACHINE_PATCH_DIR/patch-live.log 2>&1
+	patchadd -M $MACHINE_PATCH_WORK_DIR/patches/ \
+			>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
 	PATCH_STATUS=$?
+
+	cp $MACHINE_PATCH_WORK_DIR/patch-live.log $MACHINE_PATCH_DIR
 
 	if [ $PATCH_STATUS != 0 ];
 	then
@@ -178,10 +196,13 @@ SunOS)
 		touch $MACHINE_PATCH_DIR/patch-live-ok
 		echo "Live run DONE OK!"
 		echo "Generating Post-Patch software list..."
-		pkginfo -l >$MACHINE_PATCH_DIR/software-post.txt 2>&1
+		echo "*** pkginfo -l ***\n\n\n" >$MACHINE_PATCH_DIR/software-post.txt
+		pkginfo -l >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
+		echo "*** showrev -p ***\n\n\n" >>$MACHINE_PATCH_DIR/software-post.txt
+		showrev -p >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
 		echo "Done, all OK! Thanks for using the Patcherrrrr!"
+		exit $TRUE
 	fi
-	exit
 ;;
 *)
 	echo "We do not support patching for $OSNAME yet.."
