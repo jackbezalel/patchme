@@ -1,10 +1,11 @@
 #!/bin/sh
 
 # Author: Jack Bezalel
+# Functions
 
-#Functions
 
-function GET_LINUX_VENDOR(){
+GET_LINUX_VENDOR()
+{
 
 # centos and oracle must be checked first since sometimes
 # the redhat-release file could co-exist along with the centos-release

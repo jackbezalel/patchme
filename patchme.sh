@@ -4,6 +4,14 @@
 
 #Functions
 
+# General notes
+#
+# The following situations NOT considered an error, thus 
+# we exit with $TRUE (all OK) in those cases:
+# 1. Not supporting an operating system 
+# 2. No patch for this operating system
+#
+
 FALSE=1
 TRUE=0
 
@@ -16,7 +24,6 @@ VULN="$1"
 HOSTNAME="`hostname`"
 OSNAME="`uname -s`"
 PATCH_DATE="`date +"%Y%m%d%H%M"`"
-OSARCH="`uname -i`"
 
 if [ " $VULN" = " " ];
 then
@@ -41,8 +48,8 @@ Linux)
 	LINUX_VENDOR="`GET_LINUX_VENDOR`"
 	if 	[ $LINUX_VENDOR = "error" ];
 	then
-        	echo "We do not support patching for $OSNAME"
-        	exit $FALSE
+        	echo "We do not support patching for $OSNAME yet.."
+        	exit $TRUE
 	fi
 	
 	echo "Vendor=$LINUX_VENDOR"
@@ -51,11 +58,12 @@ Linux)
 
 	if 	[ $OS_MAJOR_VERS = "error" ];
 	then
-        	echo "We do not support patching for $LINUX_VENDOR"
-        	exit $FALSE
+        	echo "We do not support patching for $LINUX_VENDOR yet.."
+        	exit $TRUE
 	fi
 	
 	echo "Major Version=$OS_MAJOR_VERS"
+	OSARCH="`uname -i`"
 	MACHINE_PATCH_DIR="/patches/machines/$HOSTNAME/$VULN/$PATCH_DATE"
 	VULN_PATCH="/patches/vuln/$VULN/$LINUX_VENDOR/$OS_MAJOR_VERS/$OSARCH"
 	echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR by patch at $VULN_PATCH"
@@ -64,9 +72,9 @@ Linux)
 	then
 		mkdir -p $MACHINE_PATCH_DIR
 		echo "Gathering current (pre-patching) YUM and RPM system info"
-		rpm -qa &> $MACHINE_PATCH_DIR/software-pre.txt
+		rpm -qa > $MACHINE_PATCH_DIR/software-pre.txt 2>&1
 		echo "Dry run (verification only) now..."
-		rpm -Fvh --test $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-dry.log
+		rpm -Fvh --test $VULN_PATCH/*.rpm > $MACHINE_PATCH_DIR/patch-dry.log 2>&1
 		PATCH_STATUS=$?
 
 		if [ $PATCH_STATUS != $TRUE ];
@@ -79,7 +87,7 @@ Linux)
 		fi
 		
 		echo "Live update running now..."
-		rpm -Fvh $VULN_PATCH/*.rpm &> $MACHINE_PATCH_DIR/patch-live.log
+		rpm -Fvh $VULN_PATCH/*.rpm > $MACHINE_PATCH_DIR/patch-live.log 2>&1
 		PATCH_STATUS=$?
 
 		if [ $PATCH_STATUS != 0 ];
@@ -91,17 +99,93 @@ Linux)
 			touch $MACHINE_PATCH_DIR/patch-live-ok
 			echo "Live run DONE OK!"
 			echo "Generating Post-Patch software list..."
-			rpm -qa &> $MACHINE_PATCH_DIR/software-post.txt
+			rpm -qa > $MACHINE_PATCH_DIR/software-post.txt 2>&1
 			echo "Done, all OK! Thanks for using the Patcherrrrr!"
 		fi
 	else
-		echo "We do not support patching for $LINUX_VENDOR"
-		exit $FALSE
+		echo "We do not support patching for $LINUX_VENDOR yet.."
+		exit $TRUE
 	fi
 ;;
+SunOS)
+	OS_MAJOR_VERS="`GET_OS_MAJOR_VERS $OSNAME`"
+
+	if 	[ $OS_MAJOR_VERS = "error" ];
+	then
+        	echo "We do not support patching for $OSNAME yet.."
+        	exit $TRUE
+	fi
+
+	echo "Vendor=$OSNAME"	
+	echo "Major Version=$OS_MAJOR_VERS"
+	
+	# Check if this machine has zones software installed
+	# Then if that's a sparse zone it should be handled by
+	# updating the global zone rather than directly
+
+	if	[ -f /usr/bin/zonename ];
+	then
+		ZONE_NAME="`zonename`"
+		echo "ZONE $ZONE_NAME"
+		ZONE_TYPE="`pkgcond -n is_what | grep 'is_sparse_root_nonglobal_zone=1'`"
+		if	[ " $ZONE_TYPE" != " " ];
+		then	
+			echo "Execution aborted since this is a sparse zone."
+			echo "Please re-run on the global zone."
+			exit $TRUE
+		fi
+	fi
+
+	OSARCH="`uname -m`"
+	MACHINE_PATCH_DIR="/patches/machines/$HOSTNAME/$VULN/$PATCH_DATE"
+	VULN_PATCH="/patches/vuln/$VULN/$OSNAME/$OS_MAJOR_VERS/$OSARCH"
+
+	if 	[ ! -d "$VULN_PATCH" ];
+	then
+		echo "There is no patch for this machine at $VULN_PATCH"
+		echo "Exiting..."
+		exit $TRUE
+	fi
+
+	echo "Machine $HOSTNAME will be patched at $MACHINE_PATCH_DIR by patch at $VULN_PATCH"
+
+	mkdir -p $MACHINE_PATCH_DIR
+	echo "Gathering current (pre-patching) pkginfo -l system info"
+	pkginfo -l >$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+	echo "Dry run (verification only) now..."
+	pkgchk -d $VULN_PATCH/* >$MACHINE_PATCH_DIR/patch-dry.log 2>&1
+	PATCH_STATUS=$?
+
+	if [ $PATCH_STATUS != $TRUE ];
+	then
+		touch $MACHINE_PATCH_DIR/patch-dry-bad
+		echo "Failed at Dry Run - exiting!"
+		exit $FALSE
+	else
+		touch $MACHINE_PATCH_DIR/patch-dry-ok
+	fi
+
+	echo "Live update running now..."
+	pkgadd -d $VULN_PATCH >$MACHINE_PATCH_DIR/patch-live.log 2>&1
+	PATCH_STATUS=$?
+
+	if [ $PATCH_STATUS != 0 ];
+	then
+		touch $MACHINE_PATCH_DIR/patch-live-bad
+		echo "Failed at Live Run - exiting!"
+		exit $FALSE
+	else
+		touch $MACHINE_PATCH_DIR/patch-live-ok
+		echo "Live run DONE OK!"
+		echo "Generating Post-Patch software list..."
+		pkginfo -l >$MACHINE_PATCH_DIR/software-post.txt 2>&1
+		echo "Done, all OK! Thanks for using the Patcherrrrr!"
+	fi
+	exit
+;;
 *)
-	echo "We do not support patching for $OSNAME"
-	exit $FALSE
+	echo "We do not support patching for $OSNAME yet.."
+	exit $TRUE
 ;;
 esac
 
