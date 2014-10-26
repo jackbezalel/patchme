@@ -164,20 +164,26 @@ SunOS)
 	pkginfo -l >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
 	echo "*** showrev -p ***\n\n\n" >>$MACHINE_PATCH_DIR/software-pre.txt
 	showrev -p >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
-	echo "Dry run (verification only) now..."
-	patchadd -a -M $MACHINE_PATCH_WORK_DIR/patches/ \
-			>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
-	PATCH_STATUS=$?
 
-	cp $MACHINE_PATCH_WORK_DIR/patch-dry.log $MACHINE_PATCH_DIR
-
-	if [ $PATCH_STATUS != $TRUE ];
+	if 	[ $OS_MAJOR_VERS = "5.10" ];
 	then
-		touch $MACHINE_PATCH_DIR/patch-dry-bad
-		echo "Failed at Dry Run - exiting!"
-		exit $FALSE
+		echo "Dry run (verification only) now..."
+		patchadd -a -M $MACHINE_PATCH_WORK_DIR/patches/ \
+				>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
+		PATCH_STATUS=$?
+
+		cp $MACHINE_PATCH_WORK_DIR/patch-dry.log $MACHINE_PATCH_DIR
+
+		if [ $PATCH_STATUS != $TRUE ];
+		then
+			touch $MACHINE_PATCH_DIR/patch-dry-bad
+			echo "Failed at Dry Run - exiting!"
+			exit $FALSE
+		else
+			touch $MACHINE_PATCH_DIR/patch-dry-ok
+		fi
 	else
-		touch $MACHINE_PATCH_DIR/patch-dry-ok
+		echo "Dry run is not available for $OSNAME $OS_MAJOR_VERS"
 	fi
 
 	echo "Live update running now..."
