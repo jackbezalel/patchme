@@ -96,3 +96,8 @@ patch-live-ok - status file which gets created when the "Live Update" succeeds
 software-post.txt - output of the software packages installed on machine "MACHINE" after the patching
 
 So you could run reports on /patches/machines to verify which machines got patched, when, what was added / removed and what wen't wrong.
+
+PatchMe support testing coverage:
+
+- Redhat 5,6,7 (x64, x86, ia64)
+- Solaris 10 Sparc including sparse and whole zones
