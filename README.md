@@ -14,10 +14,21 @@ To use patch me you need to have this directory structure in place:
 
 /patches/vuln/VULN/OS/OSMAJOR/ARCH/
 
-	VULN = label you use through out the patch process to identify a vulnerability that needs patching
-	OS = label which the get_linux_vendor.sh function provides and labesls for each operating system type, based on information it gathers from the running system (redhat,suse,centos,oracle,debian,ubuntu as well as others that will be added such as fedora,solaris,hpux,aix and more)
-	OSMAJOR = major operating system version - Redhat 5, 6 or 7 for example. Patches for a minor verion will still be placed in the OSMAJOR directory
-	ARCH = architectures for each operating system, such as i386, x64_86, ia64 and others - based on uname -i output for a machine
+	VULN = 	label you use through out the patch process to identify a vulnerability
+		that needs patching
+	OS = 	label which the get_linux_vendor.sh function provides and labesls for each
+		operating system type, based on information it gathers from the
+		running system (redhat,suse,centos,oracle,debian,ubuntu as well as others
+		that will be added such as fedora,solaris,hpux,aix and more)
+	OSMAJOR = major operating system version - Redhat 5, 6 or 7 for example.
+		Patches for a minor verion will still be placed in the OSMAJOR directory
+	ARCH = 	architectures for each operating system, such as i386, x64_86, ia64
+		and others - based on uname -i output for a machine
+		On Solaris 5.8,5.9.5.10 I copy the patches into both sun4v and sun4u to
+		cover both platforms - unless there are patches specificaly for each
+		(should be VERY rare). In solaris 5.11 only sun4v exists for now,
+		so no need to create a sun4u ARCH folder.
+		
 
 /patches/vuln sample Directory structure:
 ==========================================
@@ -34,6 +45,9 @@ To use patch me you need to have this directory structure in place:
 /patches/vuln/CVE-2014-7169-shellshock/redhat/5/x86_64
 /patches/vuln/CVE-2014-7169-shellshock/redhat/5/i386
 /patches/vuln/CVE-2014-7169-shellshock/redhat/5/ia64
+/patches/vuln/CVE-2014-7169-shellshock/SunOS/5.9/i86pc
+/patches/vuln/CVE-2014-7169-shellshock/SunOS/5.9/sun4v
+/patches/vuln/CVE-2014-7169-shellshock/SunOS/5.9/sun4u
 
 patchme activation:
 =====================
