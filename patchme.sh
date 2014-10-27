@@ -156,7 +156,7 @@ SunOS)
 	mkdir -p $MACHINE_PATCH_WORK_DIR/patches
 
 	cp -pr $VULN_PATCH/* $MACHINE_PATCH_WORK_DIR/patches
-	ls -1 $MACHINE_PATCH_WORK_DIR/patches > $MACHINE_PATCH_WORK_DIR/patches/patchlist
+	ls -1 $MACHINE_PATCH_WORK_DIR/patches > $MACHINE_PATCH_WORK_DIR/patchlist
 
 	mkdir -p $MACHINE_PATCH_DIR
 
@@ -188,7 +188,8 @@ SunOS)
 	fi
 
 	echo "Live update running now..."
-	patchadd -M $MACHINE_PATCH_WORK_DIR/patches patchlist \
+	patchadd -M $MACHINE_PATCH_WORK_DIR/patches \
+			`cat $MACHINE_PATCH_WORK_DIR/patchlist` \
 			>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
 	PATCH_STATUS=$?
 
