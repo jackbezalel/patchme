@@ -101,3 +101,6 @@ PatchMe support testing coverage:
 
 - Redhat 5,6,7 (x64, x86, ia64)
 - Solaris 10 Sparc including sparse and whole zones
+- Solaris 10 x64 (zones not tested here but should work)
+- Solaris 9 Sparc (without dry-run since not available in Solaris 9)
+
