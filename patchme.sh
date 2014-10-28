@@ -161,17 +161,36 @@ SunOS)
 	mkdir -p $MACHINE_PATCH_DIR
 
 	echo "Gathering current (pre-patching) system info"
-	echo "*** pkginfo -l ***\n\n\n" >$MACHINE_PATCH_DIR/software-pre.txt
-	pkginfo -l >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
-	echo "*** showrev -p ***\n\n\n" >>$MACHINE_PATCH_DIR/software-pre.txt
-	showrev -p >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
 
-	if 	[ $OS_MAJOR_VERS = "5.10" ];
+	if      [ $OS_MAJOR_VERS != "5.11" ]
+	then	
+		echo "*** pkginfo -l ***\n\n\n" \
+			>$MACHINE_PATCH_DIR/software-pre.txt
+		pkginfo -l >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+		echo "*** showrev -p ***\n\n\n" \
+			>>$MACHINE_PATCH_DIR/software-pre.txt
+		showrev -p >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+	else
+		echo "*** pkg info ***\n\n\n" \
+			>$MACHINE_PATCH_DIR/software-pre.txt
+		pkg info >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
+	fi
+
+	if 	[ $OS_MAJOR_VERS = "5.10" ] || [ $OS_MAJOR_VERS = "5.11" ];
 	then
 		echo "Dry run (verification only) now..."
-		patchadd -a -M $MACHINE_PATCH_WORK_DIR/patches/ \
+
+		if      [ $OS_MAJOR_VERS = "5.10" ]
+		then
+			patchadd -a -M $MACHINE_PATCH_WORK_DIR/patches/ \
 				>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
-		PATCH_STATUS=$?
+			PATCH_STATUS=$?
+		else	
+			# Solaris 5.11... #	
+			pkg update -nv -g $MACHINE_PATCH_WORK_DIR/patches/* \
+				>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
+			PATCH_STATUS=$?
+		fi
 
 		cp $MACHINE_PATCH_WORK_DIR/patch-dry.log $MACHINE_PATCH_DIR
 
@@ -188,10 +207,18 @@ SunOS)
 	fi
 
 	echo "Live update running now..."
-	patchadd -M $MACHINE_PATCH_WORK_DIR/patches \
+	if      [ $OS_MAJOR_VERS != "5.11" ]
+	then
+		patchadd -M $MACHINE_PATCH_WORK_DIR/patches \
 			`cat $MACHINE_PATCH_WORK_DIR/patchlist` \
 			>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
-	PATCH_STATUS=$?
+		PATCH_STATUS=$?
+	else
+		# Any Solaris except for Solaris 11 #
+		pkg update -v -g $MACHINE_PATCH_WORK_DIR/patches/* \
+			>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
+		PATCH_STATUS=$?
+	fi
 
 	cp $MACHINE_PATCH_WORK_DIR/patch-live.log $MACHINE_PATCH_DIR
 
