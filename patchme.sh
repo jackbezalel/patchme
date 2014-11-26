@@ -187,7 +187,7 @@ SunOS)
 			PATCH_STATUS=$?
 		else	
 			# Solaris 5.11... #	
-			pkg update -nv -g $MACHINE_PATCH_WORK_DIR/patches/* \
+			#pkg update -nv -g $MACHINE_PATCH_WORK_DIR/patches/* \
 				>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
 			PATCH_STATUS=$?
 		fi
@@ -209,18 +209,87 @@ SunOS)
 	echo "Live update running now..."
 	if      [ $OS_MAJOR_VERS != "5.11" ]
 	then
+		# Any Solaris except for Solaris 11 #
 		patchadd -M $MACHINE_PATCH_WORK_DIR/patches \
 			`cat $MACHINE_PATCH_WORK_DIR/patchlist` \
 			>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
 		PATCH_STATUS=$?
 	else
-		# Any Solaris except for Solaris 11 #
-		pkg update -v -g $MACHINE_PATCH_WORK_DIR/patches/* \
-			>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
-		PATCH_STATUS=$?
+		# Solaris 11 taken care here #
+		# Next 3 lines are disabled since due to bug in Solaris 11
+		# Zones they do not work. Instead I am setting a file
+		# based package in the repository for each patch file
+		# Once this bug is resolved forward as well as backwards
+		# We could consider enabling those 3 lines
+		# As to the dry run I am using the original same 3 lines
+		# Assuming they do work for dry run
+		#pkg update -v -g $MACHINE_PATCH_WORK_DIR/patches/* \
+		#	>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
+		#PATCH_STATUS=$?
+		for PATCH_FILE in `cat $MACHINE_PATCH_WORK_DIR/patchlist`
+		do
+			PATCH_NAME=`echo $PATCH_FILE|awk -F. '{ print $1 }'`
+			echo "Installing " $PATCH_NAME " ..."
+			pkg set-publisher -g \
+			   file://$MACHINE_PATCH_WORK_DIR/patches/$PATCH_FILE \
+				solaris \
+				>>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
+			PATCH_STATUS=$?
+                	if [ $PATCH_STATUS != $TRUE ];
+                	then
+                        	touch $MACHINE_PATCH_DIR/patch-live-bad
+                        	echo "Failed at Live Run add origin,exiting!"
+				cp $MACHINE_PATCH_WORK_DIR/patch-live*.log \
+					$MACHINE_PATCH_DIR
+                        	exit $FALSE	
+			fi
+			pkg install -nv $PATCH_NAME \
+				>$MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log 2>&1
+			PATCH_STATUS=$?
+                        if [ $PATCH_STATUS != $TRUE ];
+                        then
+				PATCH_NOT_RELEVANT="`grep 'pkg install: The installed package install/archive is not permissible.' $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log`"
+				if [ " $PATCH_NOT_RELEVANT" != " " ];
+				then
+				echo "Skipping patch $PATCH_NAME, as it is not relevant for this system"
+				else
+					cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log \
+						>> $MACHINE_PATCH_WORK_DIR/patch-live.log
+                                	touch $MACHINE_PATCH_DIR/patch-live-bad
+                                	echo "Failed at Live Run installation,exiting!"
+
+					pkg set-publisher -G \
+                           		file://$MACHINE_PATCH_WORK_DIR/patches/$PATCH_FILE \
+                                	solaris \
+                                	>>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
+
+                                	cp $MACHINE_PATCH_WORK_DIR/patch-live*.log \
+                                        	$MACHINE_PATCH_DIR
+                                	exit $FALSE
+				fi
+                        fi
+
+			cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log \
+				>> $MACHINE_PATCH_WORK_DIR/patch-live.log
+
+			pkg set-publisher -G \
+			   file://$MACHINE_PATCH_WORK_DIR/patches/$PATCH_FILE \
+				solaris \
+				>>$MACHINE_PATCH_WORK_DIR/patch-live.log 2>&1
+			PATCH_STATUS=$?
+                        if [ $PATCH_STATUS != $TRUE ];
+                        then
+                                touch $MACHINE_PATCH_DIR/patch-live-bad
+                                echo "Failed at Dry Run remove origin, exiting!"
+                                cp $MACHINE_PATCH_WORK_DIR/patch-live*.log \
+                                        $MACHINE_PATCH_DIR
+                                exit $FALSE
+                        fi
+			echo "Finished Installing " $PATCH_NAME " ..."
+		done
 	fi
 
-	cp $MACHINE_PATCH_WORK_DIR/patch-live.log $MACHINE_PATCH_DIR
+	cp $MACHINE_PATCH_WORK_DIR/patch-live*.log $MACHINE_PATCH_DIR
 
 	if [ $PATCH_STATUS != 0 ];
 	then
