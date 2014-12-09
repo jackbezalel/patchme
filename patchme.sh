@@ -164,14 +164,14 @@ SunOS)
 
 	if      [ $OS_MAJOR_VERS != "5.11" ]
 	then	
-		echo "*** pkginfo -l ***\n\n\n" \
+		echo "\n\n\n*** pkginfo -l ***\n\n\n" \
 			>$MACHINE_PATCH_DIR/software-pre.txt
 		pkginfo -l >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
-		echo "*** showrev -p ***\n\n\n" \
+		echo "\n\n\n*** showrev -p ***\n\n\n" \
 			>>$MACHINE_PATCH_DIR/software-pre.txt
 		showrev -p >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
 	else
-		echo "*** pkg info ***\n\n\n" \
+		echo "\n\n\n*** pkg info ***\n\n\n" \
 			>$MACHINE_PATCH_DIR/software-pre.txt
 		pkg info >>$MACHINE_PATCH_DIR/software-pre.txt 2>&1
 	fi
@@ -243,7 +243,7 @@ SunOS)
 					$MACHINE_PATCH_DIR
                         	exit $FALSE	
 			fi
-			pkg install -nv $PATCH_NAME \
+			pkg install $PATCH_NAME \
 				>$MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log 2>&1
 			PATCH_STATUS=$?
                         if [ $PATCH_STATUS != $TRUE ];
@@ -280,7 +280,7 @@ SunOS)
                         if [ $PATCH_STATUS != $TRUE ];
                         then
                                 touch $MACHINE_PATCH_DIR/patch-live-bad
-                                echo "Failed at Dry Run remove origin, exiting!"
+                                echo "Failed at Live Run remove origin, exiting!"
                                 cp $MACHINE_PATCH_WORK_DIR/patch-live*.log \
                                         $MACHINE_PATCH_DIR
                                 exit $FALSE
@@ -300,10 +300,21 @@ SunOS)
 		touch $MACHINE_PATCH_DIR/patch-live-ok
 		echo "Live run DONE OK!"
 		echo "Generating Post-Patch software list..."
-		echo "*** pkginfo -l ***\n\n\n" >$MACHINE_PATCH_DIR/software-post.txt
-		pkginfo -l >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
-		echo "*** showrev -p ***\n\n\n" >>$MACHINE_PATCH_DIR/software-post.txt
-		showrev -p >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
+
+        	if      [ $OS_MAJOR_VERS != "5.11" ]
+        	then
+                	echo "\n\n\n*** pkginfo -l ***\n\n\n" \
+                       	 >$MACHINE_PATCH_DIR/software-post.txt
+                	pkginfo -l >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
+                	echo "\n\n\n*** showrev -p ***\n\n\n" \
+                        	>>$MACHINE_PATCH_DIR/software-post.txt
+                	showrev -p >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
+        	else
+                	echo "\n\n\n*** pkg info ***\n\n\n" \
+                        	>$MACHINE_PATCH_DIR/software-post.txt
+                	pkg info >>$MACHINE_PATCH_DIR/software-post.txt 2>&1
+        	fi
+
 		echo "Done, all OK! Thanks for using the Patcherrrrr!"
 		exit $TRUE
 	fi
