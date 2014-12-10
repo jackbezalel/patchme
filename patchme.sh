@@ -248,7 +248,7 @@ SunOS)
 			PATCH_STATUS=$?
                         if [ $PATCH_STATUS != $TRUE ];
                         then
-				PATCH_NOT_RELEVANT="`grep 'pkg install: The installed package install/archive is not permissible.' $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log`"
+				PATCH_NOT_RELEVANT="`cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log | grep 'The installed package ' | grep 'is not permissible.'`"
 				if [ " $PATCH_NOT_RELEVANT" != " " ];
 				then
 				echo "Skipping patch $PATCH_NAME, as it is not relevant for this system"
