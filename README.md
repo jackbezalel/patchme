@@ -99,8 +99,8 @@ So you could run reports on /patches/machines to verify which machines got patch
 
 PatchMe support testing coverage:
 
-- Redhat 5,6,7 (x64, x86, ia64)
+- Redhat 4,5,6,7 (x64, x86, ia64)
 - Solaris 10 Sparc including sparse and whole zones
 - Solaris 10 x64 (zones not tested here but should work)
 - Solaris 9 Sparc (without separate dry-run since not available in Solaris 9. Instead it runs dry run as part of the live run)
-
+- Solaris 11 Sparc, X64, including LDOMs as well as regular and kernel zones
