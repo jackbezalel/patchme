@@ -226,6 +226,7 @@ SunOS)
 		#pkg update -v -g $MACHINE_PATCH_WORK_DIR/patches/* \
 		#	>$MACHINE_PATCH_WORK_DIR/patch-dry.log 2>&1
 		#PATCH_STATUS=$?
+		NO_SOL11_PATCHES_APPLIED="TRUE"
 		for PATCH_FILE in `cat $MACHINE_PATCH_WORK_DIR/patchlist`
 		do
 			PATCH_NAME=`echo $PATCH_FILE|awk -F. '{ print $1 }'`
@@ -249,9 +250,10 @@ SunOS)
                         if [ $PATCH_STATUS != $TRUE ];
                         then
 				PATCH_NOT_RELEVANT="`cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log | grep 'The installed package ' | grep 'is not permissible.'`"
-				if [ " $PATCH_NOT_RELEVANT" != " " ];
+				PATCH_CANT_BE_APPLIED="`cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log | grep 'pkg install: No solution was found to satisfy constraints'`"
+				if [ " $PATCH_NOT_RELEVANT" != " " ] || [ " $PATCH_CANT_BE_APPLIED" != " " ];
 				then
-				echo "Skipping patch $PATCH_NAME, as it is not relevant for this system"
+				echo "Skipping patch $PATCH_NAME, as it is not relevant or can't be applied"
 				else
 					cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log \
 						>> $MACHINE_PATCH_WORK_DIR/patch-live.log
@@ -267,6 +269,8 @@ SunOS)
                                         	$MACHINE_PATCH_DIR
                                 	exit $FALSE
 				fi
+			else
+				NO_SOL11_PATCHES_APPLIED="FALSE"
                         fi
 
 			cat $MACHINE_PATCH_WORK_DIR/patch-live-$PATCH_NAME.log \
@@ -291,7 +295,7 @@ SunOS)
 
 	cp $MACHINE_PATCH_WORK_DIR/patch-live*.log $MACHINE_PATCH_DIR
 
-	if [ $PATCH_STATUS != 0 ];
+	if [ $PATCH_STATUS != 0 ] || [ $NO_SOL11_PATCHES_APPLIED = "TRUE" ];
 	then
 		touch $MACHINE_PATCH_DIR/patch-live-bad
 		echo "Failed at Live Run - exiting!"
