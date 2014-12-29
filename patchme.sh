@@ -301,12 +301,12 @@ SunOS)
 
 	cp $MACHINE_PATCH_WORK_DIR/patch-live*.log $MACHINE_PATCH_DIR
 
-	if 	[ $NO_SOL11_PATCHES_APPLIED = "TRUE" ];
+	if 	[ " $NO_SOL11_PATCHES_APPLIED" = " TRUE" ];
 	then
 		echo "Warning - No patches applied at all - considering Live Run as Bad. Please check the logs"
 	fi
 
-	if [ $PATCH_STATUS != 0 ] || [ $NO_SOL11_PATCHES_APPLIED = "TRUE" ];
+	if [ $PATCH_STATUS != 0 ] || [ " $NO_SOL11_PATCHES_APPLIED" = " TRUE" ];
 	then
 		touch $MACHINE_PATCH_DIR/patch-live-bad
 		echo "Failed at Live Run - exiting!"
