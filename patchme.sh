@@ -15,6 +15,7 @@
 FALSE=1
 TRUE=0
 
+. ./services.sh
 . ./get_linux_vendor.sh
 . ./get_os_major_vers.sh
 
@@ -152,13 +153,18 @@ SunOS)
 	echo "by patch from $VULN_PATCH"
 	echo "using temporary work directory at $MACHINE_PATCH_WORK_DIR"
 
+	mkdir -p $MACHINE_PATCH_DIR
+	EXIT_IF_ERR "$?" "/dev/null"
+
 	mkdir -p $MACHINE_PATCH_WORK_DIR
+	EXIT_IF_ERR "$?" "$MACHINE_PATCH_DIR/patch-setup-bad"
 	mkdir -p $MACHINE_PATCH_WORK_DIR/patches
+	EXIT_IF_ERR "$?" "$MACHINE_PATCH_DIR/patch-setup-bad"
 
 	cp -pr $VULN_PATCH/* $MACHINE_PATCH_WORK_DIR/patches
+	EXIT_IF_ERR "$?" "$MACHINE_PATCH_DIR/patch-setup-bad"
 	ls -1 $MACHINE_PATCH_WORK_DIR/patches > $MACHINE_PATCH_WORK_DIR/patchlist
 
-	mkdir -p $MACHINE_PATCH_DIR
 
 	echo "Gathering current (pre-patching) system info"
 
