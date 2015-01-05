@@ -104,3 +104,5 @@ PatchMe support testing coverage:
 - Solaris 10 x64 (zones not tested here but should work)
 - Solaris 9 Sparc (without separate dry-run since not available in Solaris 9. Instead it runs dry run as part of the live run)
 - Solaris 11 Sparc, X64, including LDOMs as well as regular and kernel zones
+
+PatchMe should support stating it cannot run yet on HP-UX, AIX, Ubuntu, CentOS, Oracle Linux
